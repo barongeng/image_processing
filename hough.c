@@ -32,7 +32,7 @@
 int **hough;
 int ***hough_circle;
 
-static draw_line(unsigned *img, int width, int height, struct point start, struct point end)
+static void draw_line(unsigned char *img, int width, int height, struct point start, struct point end)
 {
 	int i;
 	int j;
@@ -44,26 +44,26 @@ static draw_line(unsigned *img, int width, int height, struct point start, struc
 	unsigned char *start_px = NULL;
 	unsigned char *end_px = NULL;
 
-	i = start.x;
-	j = start.y;
+	j = start.x;
+	i = start.y;
 
 	delta_x = end.x - start.x;
 	delta_y = end.y - start.y;
 
-	start_px = img + start.x * width + start.y;
-	end_px = img + end.x * width + end.y;
+	start_px = img + i * width + j;
+	end_px = img + i * width + j;
 
 	px = start_px;
 
-	while(i < delta_x && j < delta_y) {
+	while(i < delta_y && j < delta_x) {
 		px = img + i * width + j;
 
-		*px = 127;
-
-		if (delta_x)
-			i++;
+		*px = 255;
 
 		if (delta_y)
+			i++;
+
+		if (delta_x)
 			j++;
 	}
 
