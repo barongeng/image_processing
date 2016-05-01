@@ -110,7 +110,7 @@ static struct hough_param *find_best_line(struct point *points, int size, int wi
 				hough[rho][i]++;
 
 				if(hough[rho][i] > hough[rho_best][theta_best]) {
-					theta_best = angle;
+					theta_best = i;
 					rho_best = rho;
 				}
 			}
@@ -123,7 +123,7 @@ static struct hough_param *find_best_line(struct point *points, int size, int wi
 	hp->nrho = nrho;
 	hp->resolution = HOUGH_RES_SHT;
 	hp->mag = hough[hp->rho][hp->theta];
-	hp->thresh = (hough[hp->rho][hp->theta] * 90) / 100;
+	hp->thresh = (hough[hp->rho][hp->theta] * 70) / 100;
 
 	printf("accumulator max: %d\n", hough[rho_best][theta_best]);
 	printf("hp->theta: %d\n", hp->theta);
@@ -149,9 +149,9 @@ struct hough_param *find_line(unsigned char *img, int width, int height)
 
 	for (i = 0; i < height; i++) {
 		for (j = 0; j < width; j++) {
-			if (*(img + i * height + j) == 255) {
-				points[idx].x = i;
-				points[idx].y = j;
+			if (*(img + i * width + j) == 255) {
+				points[idx].x = j;
+				points[idx].y = i;
 				idx++;
 			}
 		}
@@ -277,27 +277,83 @@ void draw_overlay(struct hough_param *hp, unsigned char *img, int width, int hei
 	int rho;
 	int x;
 	int y;
+	int center_x = width / 2;
+	int center_y = height / 2;
+	int center_nrho = hp->nrho / 2;
+	float tsin;
+	float tcos;
+	struct point p0;
+	struct point p1;
+	struct point p2;
 	int angle;
 	unsigned char *px = NULL;
 
-	for (i = 0; i < hp->points_size; i++) {
-		x = hp->points[i].x;
-		y = hp->points[i].y;
+	for (i = 0; i < hp->nrho; i++) {
+		for (j = 0; j < HOUGH_RES_SHT; j++) {
+			if (hough[i][j] >= hp->thresh) {
+				angle = (j * M_PI / 50) - M_PI;
 
-		px = img + x * height + y;
+				tcos = cos(angle);
+				tsin = sin(angle);
 
-		for (theta = 0; theta < hp->resolution; theta++) {
-			angle = (theta * M_PI / 50) - M_PI;
+				if ((angle < (M_PI * 0.25)) || (angle > (M_PI * 0.75))) {
+					for (y = 0; y < height; y++) {
+						x = ((double)((i - center_nrho) - ((y - center_y) * tsin)) / tcos) + center_x;	
+						if (x >= 0 && x < width)
+							*(img + y * width + x) = 255;
+					}
+				} else {
+					for (x = 0; x < width; x++) {
+						y = ((double)((i - center_nrho) - ((x - center_x) * tcos)) / tsin) + center_y;
+						if (y >= 0 && y < height)
+							*(img + y * width + x) = 255;
+					}
+				}
+//
+//				p0.x = a * i;
+//				p0.y = b * i;
+//				p1.x = 0;
+//				p1.y = 0;
+//				p1.x = p0.x + 1000 * -b;
+//				p1.y = p0.y + 1000 * a;
+//				p2.x = p0.x - 1000 * -b;
+//				p2.y = p0.y - 1000 * a;
+//				if (j >= 45 && j <= 135) {
+//					a.x = 0;
+//					a.y = ((double)(i - (hp->nrho / 2)) - ((a.x - (width / 2)) * cos(angle))) / (sin(angle) + (height / 2));
+//
+//					b.x = width;
+//					a.y = ((double)(i - (hp->nrho / 2)) - ((a.x - (width / 2)) * cos(angle))) / (sin(angle) + (height / 2));
+//				} else {
+//					a.y = 0;
+//					a.y = ((double)(i - (hp->nrho / 2)) - ((b.y - (height / 2)) * sin(angle))) / (cos(angle) + (width / 2));
+//
+//					b.y = height;
+//					a.y = ((double)(i - (hp->nrho / 2)) - ((b.y - (height / 2)) * sin(angle))) / (cos(angle) + (width / 2));
+//				}
+//				printf("(%d, %d)\n", p0.x, p0.y);
+//				printf("draw line (%d, %d) (%d, %d)\n", p1.x, p1.y, p2.x, p2.y);
 
-			rho = (sin(angle) * x) + (cos(angle) * y);
-
-			if (rho > 0 && rho < hp->nrho && hough[rho][theta] >= hp->thresh)
-				*px = 127;
-			else
-				*px = 0;
+				draw_line(img, width, height, p0, p1);
+			}
 		}
-
 	}
+
+//	for (i = 0; i < hp->points_size; i++) {
+//		x = hp->points[i].x;
+//		y = hp->points[i].y;
+//
+//		px = img + y * width + x;
+//
+//		for (theta = 0; theta < hp->resolution; theta++) {
+//			angle = (theta * M_PI / 50) - M_PI;
+//
+//			rho = (sin(angle) * y) + (cos(angle) * x);
+//			if (rho > 0 && rho < hp->nrho && hough[rho][theta] >= hp->thresh)
+//				*px = 255;
+//		}
+//
+//	}
 
 	free(hp->points);
 	free(hp);
