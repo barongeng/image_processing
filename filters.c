@@ -38,8 +38,8 @@
 		(void) (&_max1 == &_max2);              \
 		_max1 > _max2 ? _max1 : _max2; })
 
-static int edge_sobel_kernel_x[] = {1, 0, -1, 2, 0, -2, 1, 0, -1};
-static int edge_sobel_kernel_y[] = {1, 2, -1, 0, 0, 0, -1, -2, -1};
+static int edge_sobel_kernel_x[] = {-1, 0, 1, -2, 0, 2, -1, 0, 1};
+static int edge_sobel_kernel_y[] = {-1, -2, -1, 0, 0, 0, 1, 2, 1};
 static int median_array[3 * 3];
 
 static int convolve_kernel(unsigned char *px, int *kernel, int size)
@@ -54,7 +54,7 @@ static int convolve_kernel(unsigned char *px, int *kernel, int size)
 	return sum;
 }
 
-void egde_filter(unsigned char *in, unsigned char *out, int width, int height)
+void edge_filter(unsigned char *in, unsigned char *out, int width, int height)
 {
 	int i;
 	int j;
@@ -83,27 +83,10 @@ void egde_filter(unsigned char *in, unsigned char *out, int width, int height)
 			gx = convolve_kernel(px, edge_sobel_kernel_x, 9);
 			gy = convolve_kernel(px, edge_sobel_kernel_y, 9);
 
-//			if (gx > MAX_BRIGHTNESS)
-//				gx = MAX_BRIGHTNESS;
-//			if (gx < 0)
-//				gx = 0;
-//
-//			if (gy > MAX_BRIGHTNESS)
-//				gy = MAX_BRIGHTNESS;
-//			if (gy < 0)
-//				gy = 0;
-
 			g = sqrt(gx * gx + gy * gy);
 
-//			g = MAX_BRIGHTNESS - g;
-//
-//			if (g > 200)
+//			if (g > MAX_BRIGHTNESS)
 //				g = MAX_BRIGHTNESS;
-//			else if (g < 100)
-//				g = 0;
-
-			if (g > MAX_BRIGHTNESS)
-				g = MAX_BRIGHTNESS;
 
 			*p = g;
 		}
@@ -374,7 +357,6 @@ static float get_gaussian(unsigned char *buffer, float *kernel, int len)
 void gaussian_filter(unsigned char *src, int width, int height, float sigma)
 {
 	int i;
-	int j;
 	float sum = 0.0;
 	float *kernel = NULL;
 	int len = width * height;
@@ -400,4 +382,128 @@ void gaussian_filter(unsigned char *src, int width, int height, float sigma)
 
 	free(out);
 	free(kernel);
+}
+
+void canny_edge(unsigned char *src, unsigned char *out, int width, int height, float sigma, int tmin, int tmax)
+{
+	int i;
+	int j;
+	int k;
+	int gx;
+	int gy;
+	int g;
+	int nn;
+	int ss;
+	int ww;
+	int ee;
+	int nw;
+	int ne;
+	int sw;
+	int se;
+	int p;
+	float dir;
+	int start_x = 1;
+	int start_y = 1;
+	unsigned char px[9];
+	unsigned char hyst_px[9];
+	unsigned char *edge = (unsigned char *)malloc(width * height * sizeof(unsigned char));
+
+	gaussian_filter(src, width, height, sigma);
+
+	edge_filter(src, out, width, height);
+
+	memcpy(edge, out, width * height);
+
+	for (i = start_x; i < (height - start_x); i++) {
+		for (j = start_y; j < (width - start_y); j++) {
+			p = i * width + j;
+
+			px[0] = *(src + (i - 1) * width + (j - 1));
+			px[1] = *(src + (i - 1) * width + j);
+			px[2] = *(src + (i - 1) * width + (j + 1));
+			px[3] = *(src + i * width + (j -1));
+			px[4] = *(src + i * width + j);
+			px[5] = *(src + i * width + (j + 1));
+			px[6] = *(src + (i + 1) * width + (j - 1));
+			px[7] = *(src + (i + 1) * width + j);
+			px[8] = *(src + (i + 1) * width + (j + 1));
+
+			gx = convolve_kernel(px, edge_sobel_kernel_x, 9);
+			gy = convolve_kernel(px, edge_sobel_kernel_y, 9);
+
+			/* compute direction */
+			nn = p - width;
+			ss = p + width;
+			ww = p + 1;
+			ee = p - 1;
+			nw = nn + 1;
+			ne = nn - 1;
+			sw = ss + 1;
+			se = ss - 1;
+
+			dir = (float)(fmod(atan2(gy, gx) + M_PI, M_PI) / M_PI) * 8;
+
+			if (((dir <= 1 || dir > 7) && edge[p] > edge[ee] && edge[p] > edge[ww]) || // 0 deg
+				((dir > 1 && dir <= 3) && edge[p] > edge[nw] && edge[p] > edge[se]) || // 45 deg
+				((dir > 3 && dir <= 5) && edge[p] > edge[nn] && edge[p] > edge[ss]) || // 90 deg
+				((dir > 5 && dir <= 7) && edge[p] > edge[ne] && edge[p] > edge[sw]))   // 135 deg
+				out[p] = edge[p];
+			else
+				out[p] = 0;
+
+		}
+	}
+
+
+	memcpy(src, out, width * height);
+
+
+//	for (i = start_x; i < (height - start_x); i++) {
+//		for (j = start_y; j < (width - start_y); j++) {
+//			if (*(src + i * width + j) >= tmax)
+//				*(src + i * width + j) = MAX_BRIGHTNESS;
+//			else if (*(src + i * width + j) <= tmin)
+//				*(src + i * width + j) = 0;
+//			else
+//				*(src + i * width + j) = 127;
+//		}
+//	}
+//
+	memset(out, 0, width * height);
+
+	for (i = start_x; i < (height - start_x); i++) {
+		for (j = start_y; j < (width - start_y); j++) {
+			p = i * width + j;
+
+			if (src[p] >= tmax && out[p] == 0) {
+				out[p] = MAX_BRIGHTNESS;
+				px[0] = p;
+				g = 1;
+
+				do
+				{
+					g--;
+
+					hyst_px[0] = px[g] - width;
+					hyst_px[1] = px[g] + width;
+					hyst_px[2] = px[g] + 1;
+					hyst_px[3] = px[g] - 1;
+					hyst_px[4] = px[g] - width + 1;
+					hyst_px[5] = px[g] - width - 1;
+					hyst_px[6] = px[g] + width + 1;
+					hyst_px[7] = px[g] + width - 1;
+
+					for (k = 0; k < 8; k++) {
+						if (src[hyst_px[k]] >= tmin && out[hyst_px[k]] == 0) {
+							out[hyst_px[k]] = MAX_BRIGHTNESS;
+							px[g] = hyst_px[k];
+							g++;
+						}
+					}
+				} while (g);
+			}
+		}
+	}
+
+	free(edge);
 }
