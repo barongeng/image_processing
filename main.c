@@ -82,10 +82,12 @@ int main(int argc, char **argv)
 	memset(img_out, 0, width * height);
 
 	if (!atoi(argv[5])) {
-		egde_filter(img, img_out, width, height);
-//		memcpy(img_out, img, width * height);
+//		edge_filter(img, img_out, width, height);
+		memcpy(img_out, img, width * height);
 
 		hp = find_line(img_out, width, height);
+
+		memset(img_out, 0, width * height);
 
 		printf("line, theta: %d, rho: %d\n", hp->theta, hp->rho);
 
@@ -103,9 +105,10 @@ int main(int argc, char **argv)
 //		histo_eq_max_filter(img, width, height);
 //		median_filter(img, width, height);
 //		smooth_filter(img, width, height);
-		gaussian_filter(img, width, height, 1.0);
-		egde_filter(img, img_out, width, height);
-		threshold(img_out, width, height, 255, 255);
+//		gaussian_filter(img, width, height, 1.0);
+//		edge_filter(img, img_out, width, height);
+//		threshold(img_out, width, height, 255, 255);
+		canny_edge(img, img_out, width, height, 1.4, 70, 150);
 //		memcpy(img_out, img, width * height);
 
 		hp_circle = find_circle(img_out, width, height);
