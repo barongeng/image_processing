@@ -30,6 +30,7 @@ struct hough_param {
 	int theta;
 	int rho;
 	int nrho;
+	int mag;
 	int resolution;
 	int thresh;
 };

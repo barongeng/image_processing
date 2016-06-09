@@ -34,6 +34,7 @@ int main(int argc, char **argv)
 	FILE *fp_out = NULL;
 	long fsize;
 	unsigned char *img = NULL;
+	unsigned char *px = NULL;
 	struct hough_param *hp = NULL;
 	int i;
 	int j;
@@ -77,21 +78,24 @@ int main(int argc, char **argv)
 
 	for (i = 0; i < HEIGHT; i++) {
 		for (j = 0; j < WIDTH; j++) {
-			*(img + i * HEIGHT + j) = 0;
+			px = img + i * HEIGHT + j;
 
-//			printf("compute point at (%d, %d)\n", i, j);
+			if(*px) {
+				 *px = 0;
 
-			for (theta = 0; theta < hp->resolution; theta++) {
-				rho = i * cos_lut[theta] + j * sin_lut[theta];
+//				printf("compute point at (%d, %d)\n", i, j);
 
-				if(rho > 0 && rho < hp->nrho)
-//					printf("%d, %d [%d]\n", rho, theta, hough[rho][theta]);
+				for (theta = 0; theta < hp->resolution; theta++) {
+					rho = i * cos_lut[theta] + j * sin_lut[theta];
 
-				if (rho > 0 && rho < hp->nrho && hough[rho][theta] >= hp->thresh) {
-//					printf("print gray pixel !\n");
-					*(img + i * HEIGHT + j) = 127;
+					if(rho > 0 && rho < hp->nrho)
+//						printf("%d, %d [%d]\n", rho, theta, hough[rho][theta]);
+
+					if (rho > 0 && rho < hp->nrho && hough[rho][theta] >= hp->thresh) {
+//						printf("print gray pixel !\n");
+						*px = 127;
+					}
 				}
-					
 			}
 		}
 	}
