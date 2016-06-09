@@ -20,6 +20,7 @@
 #define HOUGH_H
 
 extern int **hough;
+extern int ***hough_circle;
 
 struct point {
 	int x;
@@ -35,8 +36,17 @@ struct hough_param {
 	int thresh;
 };
 
+struct hough_param_circle {
+	int a;
+	int b;
+	int radius;
+	int resolution;
+	int thresh;
+};
+
 struct hough_param *find_line(unsigned char *img, int width, int height);
-struct hough_param *find_circle(unsigned char *img, int width, int height);
+struct hough_param_circle *find_circle(unsigned char *img, int width, int height);
 void draw_overlay(struct hough_param *hp, unsigned char *img, int width, int height);
+void draw_overlay_circle(struct hough_param_circle *hp, unsigned char *img, int width, int height);
 
 #endif /* HOUGH_H */

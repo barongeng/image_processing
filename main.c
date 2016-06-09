@@ -34,12 +34,14 @@ int main(int argc, char **argv)
 	unsigned char *img_out = NULL;
 	unsigned char *px = NULL;
 	struct hough_param *hp = NULL;
+	struct hough_param_circle *hp_circle = NULL;
 	int i;
+	int j;
 	int width;
 	int height;
 
-	if (argc < 5) {
-		printf("Usage: %s in_image_path out_image_path width height\n", argv[0]);
+	if (argc < 6) {
+		printf("Usage: %s in_image_path out_image_path width height form(0: line, 1: circle)\n", argv[0]);
 		return -EINVAL;
 	}
 
@@ -80,23 +82,39 @@ int main(int argc, char **argv)
 
 	memset(img_out, 0, width * height);
 
-//	egde_filter(img, img_out, width, height);
-	memcpy(img_out, img, width * height);
+	if (!atoi(argv[5])) {
+		egde_filter(img, img_out, width, height);
 
-	hp = find_line(img_out, width, height);
+		hp = find_line(img_out, width, height);
 
-	printf("line, theta: %d, rho: %d\n", hp->theta, hp->rho);
+		printf("line, theta: %d, rho: %d\n", hp->theta, hp->rho);
 
-	draw_overlay(hp, img_out, width, height);
+		draw_overlay(hp, img_out, width, height);
+
+		for (i = 0; i < hp->nrho; i++)
+			free(hough[i]);
+		free(hough);
+	} else {
+		memcpy(img_out, img, width * height);
+
+		hp_circle = find_circle(img_out, width, height);
+
+		printf("circle, a: %d, b: %d, radix: %d\n", hp_circle->a, hp_circle->b, hp_circle->radius);
+
+		draw_overlay_circle(hp_circle, img_out, width, height);
+
+		for (i = 0; i < width; i++) {
+			for (j = 0; j < height; j++)
+				free(hough_circle[i][j]);
+
+			free(hough_circle[i]);
+		}
+		free(hough_circle);
+	}
 
 	fwrite(img_out, width * height, 1, fp_out);
 
 	fclose(fp_out);
-
-	for (i = 0; i < hp->nrho; i++)
-		free(hough[i]);
-
-	free(hough);
 	free(img_out);
 	free(img);
 
