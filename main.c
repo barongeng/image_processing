@@ -23,10 +23,7 @@
 #include <string.h>
 
 #include "hough.h"
-
-#define WIDTH	100
-#define HEIGHT	100
-#define PI  3.1415926
+#include "filters.h"
 
 int main(int argc, char **argv)
 {
@@ -34,17 +31,23 @@ int main(int argc, char **argv)
 	FILE *fp_out = NULL;
 	long fsize;
 	unsigned char *img = NULL;
+	unsigned char *img_out = NULL;
 	unsigned char *px = NULL;
 	struct hough_param *hp = NULL;
 	int i;
 	int j;
 	int theta;
 	int rho;
+	int width;
+	int height;
 
-	if (argc < 3) {
-		printf("Usage: %s in_image_path out_image_path\n", argv[0]);
+	if (argc < 5) {
+		printf("Usage: %s in_image_path out_image_path width height\n", argv[0]);
 		return -EINVAL;
 	}
+
+	width = atoi(argv[3]);
+	height = atoi(argv[4]);
 
 	fp = fopen(argv[1], "rb");
 	if (!fp) {
@@ -66,19 +69,29 @@ int main(int argc, char **argv)
 
 	fclose(fp);
 
-	hp = find_line(img, WIDTH, HEIGHT);
-
-	printf("line, theta: %d, rho: %d\n", hp->theta, hp->rho);
-
 	fp_out = fopen(argv[2], "wb");
 	if (!fp_out) {
 		printf("invalid image path [%s]\n", argv[2]);
 		return -EINVAL;
 	}
 
-	for (i = 0; i < HEIGHT; i++) {
-		for (j = 0; j < WIDTH; j++) {
-			px = img + i * HEIGHT + j;
+	img_out = (unsigned char *)malloc(fsize * sizeof(unsigned char));
+	if (!img_out) {
+		printf("failed to allocate: %ld bytes\n", fsize);
+		return -ENOMEM;
+	}
+
+	memset(img_out, 0, width * height);
+
+	egde_filter(img, img_out, width, height);
+
+	hp = find_line(img_out, width, height);
+
+	printf("line, theta: %d, rho: %d\n", hp->theta, hp->rho);
+
+	for (i = 0; i < height; i++) {
+		for (j = 0; j < width; j++) {
+			px = img_out + i * height + j;
 
 			if(*px) {
 				 *px = 0;
@@ -100,7 +113,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	fwrite(img, WIDTH * HEIGHT, 1, fp_out);
+	fwrite(img_out, width * height, 1, fp_out);
 
 	fclose(fp_out);
 
@@ -108,7 +121,7 @@ int main(int argc, char **argv)
 		free(hough[i]);
 
 	free(hough);
-
+	free(img_out);
 	free(img);
 	free(hp);
 
