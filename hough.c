@@ -18,72 +18,65 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+#include <string.h>
 
 #include "hough.h"
 
 #define HOUGH_RES	180
 
-static struct hough_param *find_best_line(struct point *points, int size)
+int **hough;
+
+static struct hough_param *find_best_line(struct point *points, int size, int width, int height)
 {
 	int i;
 	int j;
-	int hough[10000][HOUGH_RES] = {{0}};
-//	char houghTest[DMTX_HOUGH_RES];
-//	int hough_min;
-//	int hough_max;
 	int theta_best = 0;
 	int rho;
-	int rho_offset = 0;
-	int rho_offset_best = 0;
+	int nrho;
+	int rho_best = 0;
 	int x_diff;
 	int y_diff;
 	struct hough_param *hp;
 
-//
-//	/* Predetermine which angles to test */
-//	for(i = 0; i < DMTX_HOUGH_RES; i++) {
-//		if(houghAvoid == DmtxUndefined) {
-//			houghTest[i] = 1;
-//		}
-//		else {
-//			houghMin = (houghAvoid + DMTX_HOUGH_RES/6) % DMTX_HOUGH_RES;
-//			houghMax = (houghAvoid - DMTX_HOUGH_RES/6 + DMTX_HOUGH_RES) % DMTX_HOUGH_RES;
-//			if(houghMin > houghMax)
-//				houghTest[i] = (i > houghMin || i < houghMax) ? 1 : 0;
-//			else
-//				houghTest[i] = (i > houghMin && i < houghMax) ? 1 : 0;
-//		}
-//	}
+	nrho = sqrt(width * width + height * height);
+
+	hough = (int **)malloc(nrho * sizeof(int *));
+	memset(hough, 0, nrho * sizeof(int *));
+
+	for (i = 0; i < nrho; i++) {
+		hough[i] = (int *)malloc(HOUGH_RES * sizeof(int));
+		memset(hough[i], 0, HOUGH_RES * sizeof(int));
+	}
 
 	/* Test each angle for steps along path */
 	for(j = 0; j < size; j++) {
 
-		x_diff = points[0].x - points[j].x;
-		y_diff = points[0].y - points[j].y;
+		x_diff = points[j].x;
+		y_diff = points[j].y;
+
+		if (!x_diff && !y_diff)
+			continue;
+
+//		printf("compute point at (%d, %d): ", x_diff, y_diff);
+
+//		x_diff = points[0].x - points[j].x;
+//		y_diff = points[0].y - points[j].y;
 
 		/* Increment Hough accumulator */
 		for(i = 0; i < HOUGH_RES; i++) {
 
-//			if((int)houghTest[i] == 0)
-//				continue;
+			rho = (sin_lut[i] * y_diff) + (cos_lut[i] * x_diff);
+			if(rho > 0 && rho < nrho) {
 
-			rho = (sin_lut[i] * y_diff) - (cos_lut[i] * x_diff);
-			if(rho >= -384 && rho <= 384) {
+				hough[rho][i]++;
 
-//				if(rho > 128)
-//					rho_offset = 2;
-//				else if(rho >= -128)
-//					rho_offset = 1;
-//				else
-//					rho_offset = 0;
-				rho_offset = abs(rho);
-
-				hough[rho_offset][i]++;
+//				printf("%d, %d [%d]\n", rho, i, hough[rho][i]);
 
 				/* New angle takes over lead */
-				if(hough[rho_offset][i] > hough[rho_offset_best][theta_best]) {
+				if(hough[rho][i] > hough[rho_best][theta_best]) {
 					theta_best = i;
-					rho_offset_best = rho_offset;
+					rho_best = rho;
 				}
 			}
 		}
@@ -91,7 +84,22 @@ static struct hough_param *find_best_line(struct point *points, int size)
 
 	hp = (struct hough_param *)malloc(sizeof(struct hough_param));
 	hp->theta = theta_best;
-	hp->rho = rho_offset_best;
+	hp->rho = rho_best;
+	hp->nrho = nrho;
+	hp->resolution = HOUGH_RES;
+	hp->thresh = (hough[hp->rho][hp->theta] * 70) / 100;
+
+	printf("accumulator max: %d\n", hough[rho_best][theta_best]);
+	printf("hp->theta: %d\n", hp->theta);
+	printf("hp->rho: %d\n", hp->rho);
+	printf("hp->nrho: %d\n", hp->nrho);
+	printf("hp->resolution: %d\n", hp->resolution);
+	printf("hp->thresh: %d\n", hp->thresh);
+
+//	for (i = 0; i < nrho; i++)
+//		free(hough[i]);
+//
+//	free(hough);
 
 	return hp;
 }
@@ -116,7 +124,7 @@ struct hough_param *find_line(unsigned char *img, int width, int height)
 		}
 	}
 
-	hp = find_best_line(points, width * height);
+	hp = find_best_line(points, width * height, width, height);
 
 	free(points);
 

@@ -26,7 +26,7 @@
 
 #define WIDTH	100
 #define HEIGHT	100
-#define  PI  3.1415926
+#define PI  3.1415926
 
 int main(int argc, char **argv)
 {
@@ -39,7 +39,6 @@ int main(int argc, char **argv)
 	int j;
 	int theta;
 	int rho;
-	double rad = PI / 180;
 
 	if (argc < 3) {
 		printf("Usage: %s in_image_path out_image_path\n", argv[0]);
@@ -58,7 +57,7 @@ int main(int argc, char **argv)
 
 	img = (unsigned char *)malloc(fsize * sizeof(unsigned char));
 	if (!img) {
-		printf("failed to allocate: %d bytes\n", fsize);
+		printf("failed to allocate: %ld bytes\n", fsize);
 		return -ENOMEM;
 	}
 
@@ -70,26 +69,41 @@ int main(int argc, char **argv)
 
 	printf("line, theta: %d, rho: %d\n", hp->theta, hp->rho);
 
-//	fp_out = fopen(argv[2], "wb");
-//	if (!fp_out) {
-//		printf("invalid image path [%s]\n", argv[2]);
-//		return -EINVAL;
-//	}
+	fp_out = fopen(argv[2], "wb");
+	if (!fp_out) {
+		printf("invalid image path [%s]\n", argv[2]);
+		return -EINVAL;
+	}
 
 	for (i = 0; i < HEIGHT; i++) {
 		for (j = 0; j < WIDTH; j++) {
 			*(img + i * HEIGHT + j) = 0;
 
-			for (theta = -90; theta < 180; theta++) {
-				rho = i * cos(theta * rad) + j * sin(theta * rad);
+//			printf("compute point at (%d, %d)\n", i, j);
 
-				if (abs(rho) == hp->rho)
-					printf("%d\n", rho);
+			for (theta = 0; theta < hp->resolution; theta++) {
+				rho = i * cos_lut[theta] + j * sin_lut[theta];
+
+				if(rho > 0 && rho < hp->nrho)
+//					printf("%d, %d [%d]\n", rho, theta, hough[rho][theta]);
+
+				if (rho > 0 && rho < hp->nrho && hough[rho][theta] >= hp->thresh) {
+//					printf("print gray pixel !\n");
+					*(img + i * HEIGHT + j) = 127;
+				}
+					
 			}
 		}
 	}
 
-//	fclose(fp_out);
+	fwrite(img, WIDTH * HEIGHT, 1, fp_out);
+
+	fclose(fp_out);
+
+	for (i = 0; i < hp->nrho; i++)
+		free(hough[i]);
+
+	free(hough);
 
 	free(img);
 	free(hp);

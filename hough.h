@@ -19,6 +19,8 @@
 #ifndef HOUGH_H
 #define HOUGH_H
 
+extern int **hough;
+
 struct point {
 	int x;
 	int y;
@@ -27,6 +29,9 @@ struct point {
 struct hough_param {
 	int theta;
 	int rho;
+	int nrho;
+	int resolution;
+	int thresh;
 };
 
 static int sin_lut[] =
