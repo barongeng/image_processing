@@ -27,10 +27,48 @@
 
 int **hough;
 
+static draw_line(unsigned *img, int width, int height, struct point start, struct point end)
+{
+	int i;
+	int j;
+	int sum_i;
+	int sum_j;
+	int delta_x;
+	int delta_y;
+	unsigned char *px = NULL;
+	unsigned char *start_px = NULL;
+	unsigned char *end_px = NULL;
+
+	i = start.x;
+	j = start.y;
+
+	delta_x = end.x - start.x;
+	delta_y = end.y - start.y;
+
+	start_px = img + start.x * width + start.y;
+	end_px = img + end.x * width + end.y;
+
+	px = start_px;
+
+	while(i < delta_x && j < delta_y) {
+		px = img + i * width + j;
+
+		*px = 127;
+
+		if (delta_x)
+			i++;
+
+		if (delta_y)
+			j++;
+	}
+
+}
+
 static struct hough_param *find_best_line(struct point *points, int size, int width, int height)
 {
 	int i;
 	int j;
+	int angle;
 	int theta_best = 0;
 	int rho;
 	int nrho;
@@ -58,7 +96,6 @@ static struct hough_param *find_best_line(struct point *points, int size, int wi
 		if (!x_diff && !y_diff)
 			continue;
 
-//		printf("compute point at (%d, %d): ", x_diff, y_diff);
 
 //		x_diff = points[0].x - points[j].x;
 //		y_diff = points[0].y - points[j].y;
@@ -66,16 +103,16 @@ static struct hough_param *find_best_line(struct point *points, int size, int wi
 		/* Increment Hough accumulator */
 		for(i = 0; i < HOUGH_RES; i++) {
 
-			rho = (sin_lut[i] * y_diff) + (cos_lut[i] * x_diff);
+			angle = (i * M_PI / 50) - M_PI;
+//			rho = (sin_lut[i] * y_diff) + (cos_lut[i] * x_diff);
+			rho = (sin(angle) * y_diff) + (cos(angle) * x_diff);
 			if(rho > 0 && rho < nrho) {
 
 				hough[rho][i]++;
 
-//				printf("%d, %d [%d]\n", rho, i, hough[rho][i]);
-
 				/* New angle takes over lead */
 				if(hough[rho][i] > hough[rho_best][theta_best]) {
-					theta_best = i;
+					theta_best = angle;
 					rho_best = rho;
 				}
 			}
@@ -96,11 +133,6 @@ static struct hough_param *find_best_line(struct point *points, int size, int wi
 	printf("hp->nrho: %d\n", hp->nrho);
 	printf("hp->resolution: %d\n", hp->resolution);
 	printf("hp->thresh: %d\n", hp->thresh);
-
-//	for (i = 0; i < nrho; i++)
-//		free(hough[i]);
-//
-//	free(hough);
 
 	return hp;
 }
@@ -130,4 +162,97 @@ struct hough_param *find_line(unsigned char *img, int width, int height)
 	free(points);
 
 	return hp;
+}
+
+void draw_overlay(struct hough_param *hp, unsigned char *img, int width, int height)
+{
+	int i;
+	int j;
+	int theta;
+	int rho;
+	int x;
+	int y;
+	int start_x;
+	int start_y;
+	int end_x;
+	int end_y;
+	int angle;
+	int new_angle;
+	unsigned char *px = NULL;
+	struct point a;
+	struct point b;
+
+	for (i = 0; i < height; i++) {
+		for (j = 0; j < width; j++) {
+			px = img + i * height + j;
+
+			if(*px) {
+				 *px = 0;
+
+				for (theta = 0; theta < hp->resolution; theta++) {
+//					rho = i * cos_lut[theta] + j * sin_lut[theta];
+					angle = (theta * M_PI / 50) - M_PI;
+
+					rho = (sin(angle) * j) + (cos(angle) * i);
+
+					if (rho > 0 && rho < hp->nrho && hough[rho][theta] >= hp->thresh) {
+//						x = rho * cos(angle);
+//						y = rho * sin(angle);
+//
+//						if (x < 0)
+//							x = 0;
+//
+//						if (y < 0)
+//							y = 0;
+//
+////						if (angle < 90)
+////							new_angle = 90 + angle;
+////						else
+////							new_angle = 90 - (180 - angle);
+//
+//						start_x = x + (hp->nrho * cos(new_angle));
+//						start_y = y + (hp->nrho * sin(new_angle));
+//
+//						end_x = x - (hp->nrho * cos(new_angle));
+//						end_y = y - (hp->nrho * sin(new_angle));
+//
+//						if (start_x < 0)
+//							start_x = 0;
+//						else if (start_x > width)
+//							start_x = width;
+//
+//						if (start_y < 0)
+//							start_y = 0;
+//						else if (start_y > height)
+//							start_y = height;
+//
+//						if (end_x < 0)
+//							end_x = 0;
+//						else if (end_x > width)
+//							end_x = width;
+//
+//						if (end_y < 0)
+//							end_y = 0;
+//						else if (end_y > height)
+//							end_y = height;
+//
+//						a.x = start_x;
+//						a.y = start_y;
+//
+//						b.x = end_x;
+//						b.y = end_y;
+
+//						draw_line(img, width, height, a, b);
+
+//						printf("point (%d, %d)\n", x, y);
+//						printf("start (%d, %d) , end(%d, %d)\n", start_x, end_x, start_y, end_y);
+
+						*px = 127;
+					}
+				}
+			}
+		}
+	}
+
+	free(hp);
 }

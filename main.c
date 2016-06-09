@@ -35,9 +35,6 @@ int main(int argc, char **argv)
 	unsigned char *px = NULL;
 	struct hough_param *hp = NULL;
 	int i;
-	int j;
-	int theta;
-	int rho;
 	int width;
 	int height;
 
@@ -83,35 +80,14 @@ int main(int argc, char **argv)
 
 	memset(img_out, 0, width * height);
 
-	egde_filter(img, img_out, width, height);
+//	egde_filter(img, img_out, width, height);
+	memcpy(img_out, img, width * height);
 
 	hp = find_line(img_out, width, height);
 
 	printf("line, theta: %d, rho: %d\n", hp->theta, hp->rho);
 
-	for (i = 0; i < height; i++) {
-		for (j = 0; j < width; j++) {
-			px = img_out + i * height + j;
-
-			if(*px) {
-				 *px = 0;
-
-//				printf("compute point at (%d, %d)\n", i, j);
-
-				for (theta = 0; theta < hp->resolution; theta++) {
-					rho = i * cos_lut[theta] + j * sin_lut[theta];
-
-					if(rho > 0 && rho < hp->nrho)
-//						printf("%d, %d [%d]\n", rho, theta, hough[rho][theta]);
-
-					if (rho > 0 && rho < hp->nrho && hough[rho][theta] >= hp->thresh) {
-//						printf("print gray pixel !\n");
-						*px = 127;
-					}
-				}
-			}
-		}
-	}
+	draw_overlay(hp, img_out, width, height);
 
 	fwrite(img_out, width * height, 1, fp_out);
 
@@ -123,7 +99,6 @@ int main(int argc, char **argv)
 	free(hough);
 	free(img_out);
 	free(img);
-	free(hp);
 
 	return 0;
 }

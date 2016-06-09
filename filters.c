@@ -94,49 +94,11 @@ void egde_filter(unsigned char *in, unsigned char *out, int width, int height)
 			if (gy < 0)
 				gy = 0;
 
-//			gx = abs(gx);
-//			gy = abs(gy);
-
 			g = sqrt(gx * gx + gy * gy);
-//			g = abs(gx) + abs(gy);
-
-//			min = min(min, g);
-//			max = max(max, g);
-
-//			if (g >= MAX_BRIGHTNESS)
-//				g = MAX_BRIGHTNESS;
-//
-//			if (g <= 0)
-//				g = 0;
 
 			*p = g;
 		}
 	}
-
-//	linear_threshold(out, width, height);
-
-//	for (i = start_x; i < (height - start_x); i++) {
-//		for (j = start_y; j < (width - start_y); j++) {
-//			p = out + i * width + j;
-//			px[0] = *(in + (i - 1) * width + (j - 1));
-//			px[1] = *(in + (i - 1) * width + j);
-//			px[2] = *(in + (i - 1) * width + (j + 1));
-//			px[3] = *(in + i * width + (j -1));
-//			px[4] = *(in + i * width + j);
-//			px[5] = *(in + i * width + (j + 1));
-//			px[6] = *(in + (i + 1) * width + (j - 1));
-//			px[7] = *(in + (i + 1) * width + j);
-//			px[8] = *(in + (i + 1) * width + (j + 1));
-//
-//			gx = convolve_kernel(px, edge_sobel_kernel_x, 9);
-//			gy = convolve_kernel(px, edge_sobel_kernel_y, 9);
-//
-//			g = sqrt(gx * gx + gy * gy);
-////			g = abs(gx) + abs(gy);
-//
-//			*p = MAX_BRIGHTNESS * (g - min) / (max - min);
-//		}
-//	}
 }
 
 
