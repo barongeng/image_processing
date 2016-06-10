@@ -32,7 +32,6 @@ int main(int argc, char **argv)
 	long fsize;
 	unsigned char *img = NULL;
 	unsigned char *img_out = NULL;
-	unsigned char *px = NULL;
 	struct hough_param *hp = NULL;
 	struct hough_param_circle *hp_circle = NULL;
 	int i;
@@ -102,6 +101,9 @@ int main(int argc, char **argv)
 //		linear_threshold(img, width, height);
 //		basic_threshold(img, width, height);
 //		histo_eq_max_filter(img, width, height);
+//		median_filter(img, width, height);
+//		smooth_filter(img, width, height);
+		gaussian_filter(img, width, height, 1.0);
 		egde_filter(img, img_out, width, height);
 		threshold(img_out, width, height, 255, 255);
 //		memcpy(img_out, img, width * height);
