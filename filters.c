@@ -60,8 +60,6 @@ void egde_filter(unsigned char *in, unsigned char *out, int width, int height)
 	int gx;
 	int gy;
 	int g;
-	int min = 255;
-	int max = 0;
 	int start_x = 1;
 	int start_y = 1;
 	unsigned char *p = NULL;
@@ -82,19 +80,29 @@ void egde_filter(unsigned char *in, unsigned char *out, int width, int height)
 			px[8] = *(in + (i + 1) * width + (j + 1));
 
 			gx = convolve_kernel(px, edge_sobel_kernel_x, 9);
-
-			if (gx > MAX_BRIGHTNESS)
-				gx = MAX_BRIGHTNESS;
-			if (gx < 0)
-				gx = 0;
 			gy = convolve_kernel(px, edge_sobel_kernel_y, 9);
 
-			if (gy > MAX_BRIGHTNESS)
-				gy = MAX_BRIGHTNESS;
-			if (gy < 0)
-				gy = 0;
+//			if (gx > MAX_BRIGHTNESS)
+//				gx = MAX_BRIGHTNESS;
+//			if (gx < 0)
+//				gx = 0;
+//
+//			if (gy > MAX_BRIGHTNESS)
+//				gy = MAX_BRIGHTNESS;
+//			if (gy < 0)
+//				gy = 0;
 
 			g = sqrt(gx * gx + gy * gy);
+
+//			g = MAX_BRIGHTNESS - g;
+//
+//			if (g > 200)
+//				g = MAX_BRIGHTNESS;
+//			else if (g < 100)
+//				g = 0;
+
+			if (g > MAX_BRIGHTNESS)
+				g = MAX_BRIGHTNESS;
 
 			*p = g;
 		}
@@ -112,6 +120,11 @@ void histo_eq(unsigned char *src, int width, int height)
 	unsigned int histo[256];
 	unsigned int histo_sum[256];
 
+	for (i = 0; i < size; i++) {
+		val = *(src + i);
+		histo[val]++;
+	}
+
 	 for (i= 0; i < GRAY_LEVELS; i++) {
 		sum += histo[i];
 		histo_sum[i] = sum;
@@ -125,6 +138,88 @@ void histo_eq(unsigned char *src, int width, int height)
 		*(src + i) = histo_sum[val] * constant;
 	}
  
+}
+
+void histo_eq_max_filter(unsigned char *src, int width, int height)
+{
+	int i;
+	int j;
+	int val;
+	int sum = 0;
+	int max = 0;
+	int size = width * height;
+	float constant;
+	unsigned int histo[256];
+	unsigned int histo_sum[256];
+
+	for (i = 0; i < size; i++) {
+		val = *(src + i);
+		histo[val]++;
+	}
+
+	 for (i= 0; i < GRAY_LEVELS; i++) {
+		sum += histo[i];
+		histo_sum[i] = sum;
+	}
+
+	constant = (float)230 / (float)size;
+//	constant = (float)255 / (float)size;
+
+	for (i = 0; i < size; i++) {
+		val = *(src + i);
+		*(src + i) = histo_sum[val] * constant;
+	}
+
+	/* max between 10 points */
+	for (i = 0; i < GRAY_LEVELS; i ++) {
+		for (j = i; j < (i + 10); j++) {
+			max = max(max, histo[j]);
+		}
+
+		histo[i] = max;
+		max = 0;
+	}
+ 
+}
+
+void histo_eq_average_filter(unsigned char *src, int width, int height)
+{
+	int i;
+	int j;
+	int val;
+	int sum = 0;
+	int size = width * height;
+	float constant;
+	unsigned int histo[256];
+	unsigned int histo_sum[256];
+
+	for (i = 0; i < size; i++) {
+		val = *(src + i);
+		histo[val]++;
+	}
+
+	 for (i= 0; i < GRAY_LEVELS; i++) {
+		sum += histo[i];
+		histo_sum[i] = sum;
+	}
+
+	constant = (float)230 / (float)size;
+//	constant = (float)255 / (float)size;
+
+	for (i = 0; i < size; i++) {
+		val = *(src + i);
+		*(src + i) = histo_sum[val] * constant;
+	}
+
+	/* average between 10 points */
+	for (i = 0; i < GRAY_LEVELS; i ++) {
+		val = 0;
+		for (j = i; j < (i + 10); j++) {
+			val += histo[j];
+		}
+
+		histo[i] = val / 10;
+	} 
 }
 
 void linear_threshold(unsigned char *src, int width, int height)
@@ -147,6 +242,44 @@ void linear_threshold(unsigned char *src, int width, int height)
 	for (i = 0; i < size; i++) {
 		val = *(src + i);
 		val = (val - min) * MAX_BRIGHTNESS / (max - min);
+
+		*(src + i) = val;
+	}
+}
+
+void basic_threshold(unsigned char *src, int width, int height)
+{
+	int i;
+	int val;
+	int max = 126;
+	int min = 128;
+	int size = width * height;
+
+	for (i = 0; i < size; i++) {
+		val = *(src + i);
+
+		if (val > max)
+			val = 255;
+		else if (val < min)
+			val = 0;
+
+		*(src + i) = val;
+	}
+}
+
+void threshold(unsigned char *src, int width, int height, int min, int max)
+{
+	int i;
+	int val;
+	int size = width * height;
+
+	for (i = 0; i < size; i++) {
+		val = *(src + i);
+
+		if (val > max)
+			val = 255;
+		else if (val < min)
+			val = 0;
 
 		*(src + i) = val;
 	}

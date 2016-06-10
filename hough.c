@@ -25,10 +25,9 @@
 
 #define HOUGH_RES_SHT	180
 #define HOUGH_RES_CHT	360
-#define RADI_SIZE	100
-#define CIRCLE_A	36
-#define CIRCLE_B	38
-#define RADIUS		54
+#define RADIUS_BEGIN	10
+#define RADIUS_END	54
+#define RADIUS_SIZE	(RADIUS_END + 1)
 
 int **hough;
 int ***hough_circle;
@@ -79,8 +78,8 @@ static struct hough_param *find_best_line(struct point *points, int size, int wi
 	int rho;
 	int nrho;
 	int rho_best = 0;
-	int x_diff;
-	int y_diff;
+	int x;
+	int y;
 	struct hough_param *hp;
 
 	nrho = sqrt(width * width + height * height);
@@ -96,22 +95,20 @@ static struct hough_param *find_best_line(struct point *points, int size, int wi
 	/* Test each angle for steps along path */
 	for(j = 0; j < size; j++) {
 
-		x_diff = points[j].x;
-		y_diff = points[j].y;
+		x = points[j].x;
+		y = points[j].y;
 
-		if (!x_diff && !y_diff)
+		if (!x && !y)
 			continue;
 
-		/* Increment Hough accumulator */
 		for(i = 0; i < HOUGH_RES_SHT; i++) {
 
 			angle = (i * M_PI / 50) - M_PI;
-			rho = (sin(angle) * y_diff) + (cos(angle) * x_diff);
+			rho = (sin(angle) * y) + (cos(angle) * x);
 			if(rho > 0 && rho < nrho) {
 
 				hough[rho][i]++;
 
-				/* New angle takes over lead */
 				if(hough[rho][i] > hough[rho_best][theta_best]) {
 					theta_best = angle;
 					rho_best = rho;
@@ -171,11 +168,13 @@ static struct hough_param_circle *find_best_circle(struct point *points, int siz
 	int j;
 	int a;
 	int b;
+	int r;
 	int a_best = 0;
 	int b_best = 0;
+	int r_best = 0;
 	int angle;
-	int x_diff;
-	int y_diff;
+	int x;
+	int y;
 	struct hough_param_circle *hp;
 
 	hough_circle = (int ***)malloc(width * sizeof(int **));
@@ -185,35 +184,36 @@ static struct hough_param_circle *find_best_circle(struct point *points, int siz
 		hough_circle[i] = (int *)malloc(height * sizeof(int *));
 		memset(hough_circle[i], 0, height * sizeof(int *));
 		for (j = 0; j < height; j++) {
-			hough_circle[i][j] = (int *)malloc(RADI_SIZE * sizeof(int));
-			memset(hough_circle[i][j], 0, RADI_SIZE * sizeof(int));
+			hough_circle[i][j] = (int *)malloc(RADIUS_SIZE * sizeof(int));
+			memset(hough_circle[i][j], 0, RADIUS_SIZE * sizeof(int));
 		}
 	}
 
-	/* Test each angle for steps along path */
 	for(j = 0; j < size; j++) {
 
-		x_diff = points[j].x;
-		y_diff = points[j].y;
+		x = points[j].x;
+		y = points[j].y;
 
-		if (!x_diff && !y_diff)
+		if (!x && !y)
 			continue;
 
-		/* Increment Hough accumulator */
 		for(i = 0; i < HOUGH_RES_CHT; i++) {
 
 			angle = (i * M_PI / 50) - M_PI;
 
-			a = x_diff - (RADIUS * cos(angle));
-			b = y_diff - (RADIUS * sin(angle));
+			for (r = RADIUS_BEGIN; r <= RADIUS_END; r++) {
+				a = x - (r * cos(angle));
+				b = y - (r * sin(angle));
 
-			if(a > 0 && a < width && b > 0 && b < height) {
+				if(a > 0 && a < width && b > 0 && b < height) {
 
-				hough_circle[a][b][RADIUS]++;
+					hough_circle[a][b][r]++;
 
-				if (hough_circle[a][b][RADIUS] > hough_circle[a_best][b_best][RADIUS]) {
-					a_best = a;
-					b_best = b;
+					if (hough_circle[a][b][r] > hough_circle[a_best][b_best][r_best]) {
+						a_best = a;
+						b_best = b;
+						r_best = r;
+					}
 				}
 			}
 		}
@@ -222,11 +222,11 @@ static struct hough_param_circle *find_best_circle(struct point *points, int siz
 	hp = (struct hough_param_circle *)malloc(sizeof(struct hough_param_circle));
 	hp->a = a_best;
 	hp->b = b_best;
-	hp->radius = RADIUS;
+	hp->radius = r_best;
 	hp->resolution = HOUGH_RES_CHT;
-	hp->thresh = (hough_circle[hp->a][hp->b][hp->radius] * 90) / 100;
+	hp->thresh = (hough_circle[hp->a][hp->b][hp->radius] * 100) / 100;
 
-	printf("accumulator max: %d\n", hough_circle[a_best][b_best][RADIUS]);
+	printf("accumulator max: %d\n", hough_circle[a_best][b_best][r_best]);
 	printf("hp->a: %d\n", hp->a);
 	printf("hp->b: %d\n", hp->b);
 	printf("hp->radius: %d\n", hp->radius);
@@ -278,8 +278,8 @@ void draw_overlay(struct hough_param *hp, unsigned char *img, int width, int hei
 		for (j = 0; j < width; j++) {
 			px = img + i * height + j;
 
-			if(*px) {
-				 *px = 0;
+			if(*px == 255) {
+				*px = 0;
 
 				for (theta = 0; theta < hp->resolution; theta++) {
 					angle = (theta * M_PI / 50) - M_PI;
@@ -289,6 +289,10 @@ void draw_overlay(struct hough_param *hp, unsigned char *img, int width, int hei
 					if (rho > 0 && rho < hp->nrho && hough[rho][theta] >= hp->thresh)
 						*px = 127;
 				}
+			} else {
+
+				*px = 0;
+				continue;
 			}
 		}
 	}
@@ -302,6 +306,7 @@ void draw_overlay_circle(struct hough_param_circle *hp, unsigned char *img, int 
 	int j;
 	int a;
 	int b;
+	int r;
 	int theta;
 	int x;
 	int y;
@@ -312,18 +317,23 @@ void draw_overlay_circle(struct hough_param_circle *hp, unsigned char *img, int 
 		for (j = 0; j < width; j++) {
 			px = img + i * height + j;
 
-			if(*px) {
-				 *px = 0;
+			if(*px == 255) {
+				*px = 0;
 
 				for (theta = 0; theta < hp->resolution; theta++) {
 					angle = (theta * M_PI / 50) - M_PI;
 
-					a = i - (RADIUS * cos(angle));
-					b = j - (RADIUS * sin(angle));
+					for (r = RADIUS_BEGIN; r <= RADIUS_END; r++) {
+						a = i - (r * cos(angle));
+						b = j - (r * sin(angle));
 
-					if (a > 0 && a < width && b > 0 && b < height && hough_circle[a][b][hp->radius] >= hp->thresh)
-						*px = 127;
+						if (a > 0 && a < width && b > 0 && b < height && hough_circle[a][b][r] >= hp->thresh)
+							*px = 127;
+					}
 				}
+			} else {
+				*px = 0;
+				continue;
 			}
 		}
 	}

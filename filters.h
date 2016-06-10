@@ -21,6 +21,10 @@
 
 void egde_filter(unsigned char *in, unsigned char *out, int width, int height);
 void histo_eq(unsigned char *src, int width, int height);
+void histo_eq_max_filter(unsigned char *src, int width, int height);
+void histo_eq_average_filter(unsigned char *src, int width, int height);
 void linear_threshold(unsigned char *src, int width, int height);
+void basic_threshold(unsigned char *src, int width, int height);
+void threshold(unsigned char *src, int width, int height, int min, int max);
 
 #endif /* FILTERS_H */

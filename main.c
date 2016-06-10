@@ -84,6 +84,7 @@ int main(int argc, char **argv)
 
 	if (!atoi(argv[5])) {
 		egde_filter(img, img_out, width, height);
+//		memcpy(img_out, img, width * height);
 
 		hp = find_line(img_out, width, height);
 
@@ -95,7 +96,15 @@ int main(int argc, char **argv)
 			free(hough[i]);
 		free(hough);
 	} else {
-		memcpy(img_out, img, width * height);
+//		histo_eq(img, width, height);
+//		histo_eq_max_filter(img, width, height);
+//		histo_eq_average_filter(img, width, height);
+//		linear_threshold(img, width, height);
+//		basic_threshold(img, width, height);
+//		histo_eq_max_filter(img, width, height);
+		egde_filter(img, img_out, width, height);
+		threshold(img_out, width, height, 255, 255);
+//		memcpy(img_out, img, width * height);
 
 		hp_circle = find_circle(img_out, width, height);
 
