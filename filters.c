@@ -40,6 +40,7 @@
 
 static int edge_sobel_kernel_x[] = {1, 0, -1, 2, 0, -2, 1, 0, -1};
 static int edge_sobel_kernel_y[] = {1, 2, -1, 0, 0, 0, -1, -2, -1};
+static int median_array[3 * 3];
 
 static int convolve_kernel(unsigned char *px, int *kernel, int size)
 {
@@ -283,4 +284,120 @@ void threshold(unsigned char *src, int width, int height, int min, int max)
 
 		*(src + i) = val;
 	}
+}
+
+static void insert_array(unsigned char val)
+{
+	static int i = 0;
+
+	if (i == 9)
+		i = 0;
+
+	median_array[i] = val;
+	i++;
+}
+
+static void sort(void)
+{
+	int i, j, t;
+
+	for (i = 1; i < 9; i++) {
+		t = median_array[i];
+		j = i - 1;
+
+		while ((j >= 0) && (t < median_array[j])) {
+			median_array[j + 1] = median_array[j];
+			j--;
+		}
+
+		median_array[j + 1] = t;
+	}
+}
+
+static unsigned char median(void)
+{
+	return median_array[9 / 2];
+}
+
+void median_filter(unsigned char *src, int width, int height)
+{
+	int k,l;
+	int i = 1;
+	int j = 1;
+	int start_x = j * width + i;
+	unsigned int size = width * height - 1;
+
+	for (i = start_x; i < size; i++) {
+		for (k = i - width; k <= i + width; k += width) {
+			for (l = k - 1; l <= k + 1; l++)
+				insert_array(src[l]);
+
+		}
+
+		sort();
+		src[i] = median();
+
+	}
+}
+
+void smooth_filter(unsigned char *src, int width, int height)
+{
+	int k,l;
+	int i = 1;
+	int j = 1;
+	int val = 0;
+	int start_x = j * width + i;
+	unsigned int size = width * height - 1;
+
+	for (i = start_x; i < size; i++) {
+		val = 0;
+		for (k = i - width; k <= i + width; k += width) {
+			for (l = k - 1; l <= k + 1; l++)
+				val += src[l];
+		}
+
+		src[i] = (val / 9);
+	}
+}
+
+static float get_gaussian(unsigned char *buffer, float *kernel, int len)
+{
+	int i;
+	float val = 0.0;
+
+	for (i = 0; i < len; i++)
+		val += (float)buffer[i] * kernel[i];
+
+	return val;
+}
+
+void gaussian_filter(unsigned char *src, int width, int height, float sigma)
+{
+	int i;
+	int j;
+	float sum = 0.0;
+	float *kernel = NULL;
+	int len = width * height;
+	int g_size = 2 * (int)(2 * sigma) + 3;
+	unsigned char *out = NULL;
+
+	out = (unsigned char *)malloc(len);
+	kernel = (float *)malloc(g_size * g_size * sizeof(float));
+
+	memcpy(out, src, len);
+
+	for (i = -g_size; i <= g_size; i++) {
+		kernel[i + g_size] = exp(-0.5 * i * i / (sigma * sigma));
+		sum += kernel[i +  g_size];
+	}
+
+	for (i = -g_size; i <= g_size; i++)
+		kernel[i + g_size] /= sum;
+
+	for (i = g_size; i < (len - g_size); i++)
+		src[i] = get_gaussian(&out[i - g_size], kernel, g_size * g_size);
+
+
+	free(out);
+	free(kernel);
 }

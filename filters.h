@@ -26,5 +26,8 @@ void histo_eq_average_filter(unsigned char *src, int width, int height);
 void linear_threshold(unsigned char *src, int width, int height);
 void basic_threshold(unsigned char *src, int width, int height);
 void threshold(unsigned char *src, int width, int height, int min, int max);
+void median_filter(unsigned char *src, int width, int height);
+void smooth_filter(unsigned char *src, int width, int height);
+void gaussian_filter(unsigned char *src, int width, int height, float sigma);
 
 #endif /* FILTERS_H */
