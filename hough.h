@@ -34,6 +34,8 @@ struct hough_param {
 	int mag;
 	int resolution;
 	int thresh;
+	struct point *points;
+	int points_size;
 };
 
 struct hough_param_circle {
@@ -42,6 +44,8 @@ struct hough_param_circle {
 	int radius;
 	int resolution;
 	int thresh;
+	struct point *points;
+	int points_size;
 };
 
 struct hough_param *find_line(unsigned char *img, int width, int height);
