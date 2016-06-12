@@ -29,42 +29,86 @@
 #define RADIUS_END	54
 #define RADIUS_SIZE	(RADIUS_END + 1)
 
+#define sign(x) ((x<0)?-1:((x>0)?1:0))
+
 int **hough;
 int ***hough_circle;
 
+//static void draw_line(unsigned char *img, int width, int height, struct point start, struct point end)
+//{
+//	int i;
+//	int j;
+//	int sum_i;
+//	int sum_j;
+//	int delta_x;
+//	int delta_y;
+//	unsigned char *px = NULL;
+//	unsigned char *start_px = NULL;
+//	unsigned char *end_px = NULL;
+//
+//	j = start.x;
+//	i = start.y;
+//
+//	delta_x = end.x - start.x;
+//	delta_y = end.y - start.y;
+//
+//	printf("%d -> %d %d -> %d\n", j, delta_x, i, delta_y);
+//
+//	start_px = img + start.y * width + start.x;
+//	end_px = img + end.y * width + end.x;
+//
+//	px = start_px;
+//
+//	while(i < delta_y && j < delta_x) {
+//		px = img + i * width + j;
+//
+//		*px = 255;
+//
+//		if (delta_y)
+//			i++;
+//
+//		if (delta_x)
+//			j++;
+//	}
+//
+//
+//
+//}
+
+
 static void draw_line(unsigned char *img, int width, int height, struct point start, struct point end)
 {
-	int i;
-	int j;
-	int sum_i;
-	int sum_j;
-	int delta_x;
-	int delta_y;
-	unsigned char *px = NULL;
-	unsigned char *start_px = NULL;
-	unsigned char *end_px = NULL;
 
-	j = start.x;
-	i = start.y;
-
-	delta_x = end.x - start.x;
-	delta_y = end.y - start.y;
-
-	start_px = img + i * width + j;
-	end_px = img + i * width + j;
-
-	px = start_px;
-
-	while(i < delta_y && j < delta_x) {
-		px = img + i * width + j;
-
-		*px = 255;
-
-		if (delta_y)
-			i++;
-
-		if (delta_x)
-			j++;
+	int dx,dy,sdx,sdy,px,py,dxabs,dyabs,i;
+	float slope;
+	unsigned char *p = NULL;
+	int x1 = start.x;
+	int y1 = start.y;
+	int x2 = end.x;
+	int y2 = end.y;
+	dx = x2 - x1;      /* the horizontal distance of the line */
+	dy = y2 - y1;      /* the vertical distance of the line */
+	dxabs = abs(dx);
+	dyabs = abs(dy);
+	sdx = sign(dx);
+	sdy = sign(dy);
+	if (dxabs >= dyabs) {
+		slope = (float)dy / (float)dx;
+		for (i = 0; i != dx; i += sdx) {
+			px = i + x1;
+			py = slope * i + y1;
+			p = img + py * width + px;
+			*p = 255;
+		}
+	}
+	else {
+		slope = (float)dx / (float)dy;
+		for (i = 0; i != dy; i += sdy) {
+			px = slope * i + x1;
+			py = i + y1;
+			p = img + py * width + px;
+			*p = 255;
+		}
 	}
 
 }
@@ -103,7 +147,7 @@ static struct hough_param *find_best_line(struct point *points, int size, int wi
 
 		for(i = 0; i < HOUGH_RES_SHT; i++) {
 
-			angle = (i * M_PI / 50) - M_PI;
+			angle = i * M_PI / 180;
 			rho = (sin(angle) * y) + (cos(angle) * x);
 			if(rho > 0 && rho < nrho) {
 
@@ -202,7 +246,7 @@ static struct hough_param_circle *find_best_circle(struct point *points, int siz
 
 		for(i = 0; i < HOUGH_RES_CHT; i++) {
 
-			angle = (i * M_PI / 50) - M_PI;
+			angle = i * M_PI / 180;
 
 			for (r = RADIUS_BEGIN; r <= RADIUS_END; r++) {
 				a = x - (r * cos(angle));
@@ -253,9 +297,9 @@ struct hough_param_circle *find_circle(unsigned char *img, int width, int height
 
 	for (i = 0; i < height; i++) {
 		for (j = 0; j < width; j++) {
-			if (*(img + i * height + j) == 255) {
-				points[idx].x = i;
-				points[idx].y = j;
+			if (*(img + i * width + j) == 255) {
+				points[idx].x = j;
+				points[idx].y = i;
 				idx++;
 			}
 		}
@@ -280,35 +324,90 @@ void draw_overlay(struct hough_param *hp, unsigned char *img, int width, int hei
 	int center_x = width / 2;
 	int center_y = height / 2;
 	int center_nrho = hp->nrho / 2;
-	float tsin;
-	float tcos;
+	double tsin;
+	double tcos;
 	struct point p0;
 	struct point p1;
 	struct point p2;
 	int angle;
+	int max_length = sqrt(width * width + height * height);
 	unsigned char *px = NULL;
 
 	for (i = 0; i < hp->nrho; i++) {
 		for (j = 0; j < HOUGH_RES_SHT; j++) {
 			if (hough[i][j] >= hp->thresh) {
-				angle = (j * M_PI / 50) - M_PI;
+				angle = j * M_PI / 180;
 
 				tcos = cos(angle);
 				tsin = sin(angle);
 
-				if ((angle < (M_PI * 0.25)) || (angle > (M_PI * 0.75))) {
-					for (y = 0; y < height; y++) {
-						x = ((double)((i - center_nrho) - ((y - center_y) * tsin)) / tcos) + center_x;	
-						if (x >= 0 && x < width)
-							*(img + y * width + x) = 255;
-					}
-				} else {
-					for (x = 0; x < width; x++) {
-						y = ((double)((i - center_nrho) - ((x - center_x) * tcos)) / tsin) + center_y;
-						if (y >= 0 && y < height)
-							*(img + y * width + x) = 255;
-					}
-				}
+				x = tcos * i;
+				y = tsin * i;
+
+				p0.x = x + max_length * tcos;
+				p0.y = y + max_length * tsin;
+				p1.x = x - max_length * tcos;
+				p1.y = y - max_length * tsin;
+
+				if (p0.x < 0)
+					p0.x = 0;
+				else if (p0.x > width)
+					p0.x = width;
+
+				if (p1.x < 0)
+					p1.x = 0;
+				else if (p1.x > width)
+					p1.x = width;
+
+				if (p0.y < 0)
+					p0.y = 0;
+				else if (p0.y > height)
+					p0.y = height;
+
+				if (p1.y < 0)
+					p1.y = 0;
+				else if (p1.y > height)
+					p1.y = height;
+
+//				p0.x = 1;
+//				p0.y = (-tcos/tsin) * p0.x  + (i / tsin);
+//				p1.x = width - 1;
+//				p1.y = (-tcos/tsin) * p1.x  + (i / tsin);
+
+//				p0.x = (x + 1000 * -tsin);
+//				p0.y = (y + 1000 * tcos);
+//				p1.x = (x - 1000 * -tsin);
+//				p1.y = (y - 1000 * tcos);
+//
+//					printf("got point at (%d, %d)\n", x, y);
+
+//				if ((angle < (M_PI * 0.25)) || (angle > (M_PI * 0.75))) {
+
+//				p0.x = 1;
+//				p0.y = (-tcos/tsin) * p0.x  + (i / tsin);
+//				p1.x = width - 1;
+//				p1.y = (-tcos/tsin) * p1.x  + (i / tsin);
+
+//				p0.x = (x + 1000 * -tsin);
+//				p0.y = (y + 1000 * tcos);
+//				p1.x = (x - 1000 * -tsin);
+//				p1.y = (y - 1000 * tcos);
+//
+//					printf("got point at (%d, %d)\n", x, y);
+
+//				if ((angle < (M_PI * 0.25)) || (angle > (M_PI * 0.75))) {
+//					for (y = 0; y < height; y++) {
+//						x = ((double)((i - center_nrho) - ((y - center_y) * tsin)) / tcos) + center_x;	
+//						if (x >= 0 && x < width)
+//							*(img + y * width + x) = 255;
+//					}
+//				} else {
+//					for (x = 0; x < width; x++) {
+//						y = ((double)((i - center_nrho) - ((x - center_x) * tcos)) / tsin) + center_y;
+//						if (y >= 0 && y < height)
+//							*(img + y * width + x) = 255;
+//					}
+//				}
 //
 //				p0.x = a * i;
 //				p0.y = b * i;
@@ -332,13 +431,13 @@ void draw_overlay(struct hough_param *hp, unsigned char *img, int width, int hei
 //					a.y = ((double)(i - (hp->nrho / 2)) - ((b.y - (height / 2)) * sin(angle))) / (cos(angle) + (width / 2));
 //				}
 //				printf("(%d, %d)\n", p0.x, p0.y);
-//				printf("draw line (%d, %d) (%d, %d)\n", p1.x, p1.y, p2.x, p2.y);
+				printf("draw line (%d, %d) (%d, %d)\n", p0.x, p0.y, p1.x, p1.y);
 
 				draw_line(img, width, height, p0, p1);
 			}
 		}
 	}
-
+//
 //	for (i = 0; i < hp->points_size; i++) {
 //		x = hp->points[i].x;
 //		y = hp->points[i].y;
@@ -346,7 +445,7 @@ void draw_overlay(struct hough_param *hp, unsigned char *img, int width, int hei
 //		px = img + y * width + x;
 //
 //		for (theta = 0; theta < hp->resolution; theta++) {
-//			angle = (theta * M_PI / 50) - M_PI;
+//			angle = theta * M_PI / 180;
 //
 //			rho = (sin(angle) * y) + (cos(angle) * x);
 //			if (rho > 0 && rho < hp->nrho && hough[rho][theta] >= hp->thresh)
@@ -381,7 +480,7 @@ void draw_overlay_circle(struct hough_param_circle *hp, unsigned char *img, int 
 		*px = 0;
 
 		for (theta = 0; theta < hp->resolution; theta++) {
-			angle = (theta * M_PI / 50) - M_PI;
+			angle = theta * M_PI / 180;
 
 			for (r = RADIUS_BEGIN; r <= RADIUS_END; r++) {
 				a = x - (r * cos(angle));
