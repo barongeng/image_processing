@@ -27,5 +27,6 @@ struct point {
 
 void clip_line(struct point *p1, struct point *p2, int xmin, int ymin, int xmax, int ymax);
 void draw_line(unsigned char *img, int width, int height, struct point start, struct point end);
+void draw_circle(unsigned char *img, int width, int height, struct point p, int radius);
 
 #endif /* IMG_UTILS_H */

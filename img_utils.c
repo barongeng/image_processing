@@ -143,3 +143,31 @@ void draw_line(unsigned char *img, int width, int height, struct point start, st
 
 }
 
+void draw_circle(unsigned char *img, int width, int height, struct point p, int radius)
+{
+		int x = radius;
+		int y = 0;
+		int err = 0;
+		int x0 = p.x;
+		int y0 = p.y;
+
+		while (x >= y)
+		{
+				*(img + (y0 + y) * width + (x0 + x)) = 255;
+				*(img + (y0 + x) * width + (x0 + y)) = 255;
+				*(img + (y0 + x) * width + (x0 - y)) = 255;
+				*(img + (y0 + y) * width + (x0 - x)) = 255;
+				*(img + (y0 - y) * width + (x0 - x)) = 255;
+				*(img + (y0 - x) * width + (x0 - y)) = 255;
+				*(img + (y0 - x) * width + (x0 + y)) = 255;
+				*(img + (y0 - y) * width + (x0 + x)) = 255;
+
+				y += 1;
+				err += 1 + 2 * y;
+				if (2 * (err - x) + 1 > 0)
+				{
+					x -= 1;
+					err += 1 - 2 * x;
+				}
+		}
+}
