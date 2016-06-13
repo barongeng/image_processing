@@ -288,26 +288,23 @@ void draw_overlay_circle(struct hough_param_circle *hp, unsigned char *img, int 
 	int theta;
 	int x;
 	int y;
-	int angle;
-	unsigned char *px = NULL;
+	double angle;
+	struct point p0;
 
-	for (i = 0; i < hp->points_size; i++) {
-		x = hp->points[i].x;
-		y = hp->points[i].y;
-
-		px = img + x * height + y;
-
-		*px = 0;
-
-		for (theta = 0; theta < hp->resolution; theta++) {
-			angle = theta * M_PI / 180;
-
+	for (a = 0; a < width; a++) {
+		for (b = 0; b < height; b++) {
 			for (r = RADIUS_BEGIN; r <= RADIUS_END; r++) {
-				a = x - (r * cos(angle));
-				b = y - (r * sin(angle));
+				if (hough_circle[a][b][r] >= hp->thresh) {
+					angle = theta * M_PI / 180;
 
-				if (a > 0 && a < width && b > 0 && b < height && hough_circle[a][b][r] >= hp->thresh)
-					*px = 127;
+					x = a + r * cos(angle);
+					y = b + r * sin(angle);
+
+					p0.x = x;
+					p0.y = y;
+
+					draw_circle(img, width, height, p0, r);
+				}
 			}
 		}
 	}

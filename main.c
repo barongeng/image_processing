@@ -113,6 +113,8 @@ int main(int argc, char **argv)
 
 		hp_circle = find_circle(img_out, width, height);
 
+		memset(img_out, 0, width * height);
+
 		printf("circle, a: %d, b: %d, radix: %d\n", hp_circle->a, hp_circle->b, hp_circle->radius);
 
 		draw_overlay_circle(hp_circle, img_out, width, height);
