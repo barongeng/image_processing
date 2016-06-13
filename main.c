@@ -93,6 +93,9 @@ int main(int argc, char **argv)
 
 		draw_overlay(hp, img_out, width, height);
 
+		free(hp->points);
+		free(hp);
+
 		for (i = 0; i < hp->nrho; i++)
 			free(hough[i]);
 		free(hough);
@@ -118,6 +121,9 @@ int main(int argc, char **argv)
 		printf("circle, a: %d, b: %d, radix: %d\n", hp_circle->a, hp_circle->b, hp_circle->radius);
 
 		draw_overlay_circle(hp_circle, img_out, width, height);
+
+		free(hp_circle->points);
+		free(hp_circle);
 
 		for (i = 0; i < width; i++) {
 			for (j = 0; j < height; j++)

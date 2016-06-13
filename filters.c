@@ -130,7 +130,7 @@ void histo_eq_max_filter(unsigned char *src, int width, int height)
 	int j;
 	int val;
 	int sum = 0;
-	int max = 0;
+	unsigned int max = 0;
 	int size = width * height;
 	float constant;
 	unsigned int histo[256];
