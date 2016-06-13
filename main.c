@@ -83,7 +83,8 @@ int main(int argc, char **argv)
 
 	if (!atoi(argv[5])) {
 //		edge_filter(img, img_out, width, height);
-		memcpy(img_out, img, width * height);
+		canny_edge(img, img_out, width, height, 1.4, 70, 150);
+//		memcpy(img_out, img, width * height);
 
 		hp = find_line(img_out, width, height);
 
