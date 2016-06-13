@@ -263,35 +263,16 @@ void draw_overlay(struct hough_param *hp, unsigned char *img, int width, int hei
 				x = tcos * i;
 				y = tsin * i;
 
-//				printf("(%d, %d)\n", x, y);
-
 				p0.x = x + max_length * -tsin;
 				p0.y = y + max_length * tcos;
 				p1.x = x - max_length * -tsin;
 				p1.y = y - max_length * tcos;
 
 				clip_line(&p0, &p1, 0, 0, width, height);
-//				printf("draw line (%d, %d) (%d, %d)\n", p0.x, p0.y, p1.x, p1.y);
 				draw_line(img, width, height, p0, p1);
 			}
 		}
 	}
-//
-//	for (i = 0; i < hp->points_size; i++) {
-//		x = hp->points[i].x;
-//		y = hp->points[i].y;
-//
-//		px = img + y * width + x;
-//
-//		for (theta = 0; theta < hp->resolution; theta++) {
-//			angle = theta * M_PI / 180;
-//
-//			rho = (sin(angle) * y) + (cos(angle) * x);
-//			if (rho > 0 && rho < hp->nrho && hough[rho][theta] >= hp->thresh)
-//				*px = 255;
-//		}
-//
-//	}
 
 	free(hp->points);
 	free(hp);
