@@ -94,12 +94,12 @@ int main(int argc, char **argv)
 
 		draw_overlay(hp, img_out, width, height);
 
-		free(hp->points);
-		free(hp);
-
 		for (i = 0; i < hp->nrho; i++)
 			free(hough[i]);
 		free(hough);
+
+		free(hp->points);
+		free(hp);
 	} else {
 //		histo_eq(img, width, height);
 //		histo_eq_max_filter(img, width, height);
@@ -125,9 +125,6 @@ int main(int argc, char **argv)
 
 		memcpy(img_out, img, width * height);
 
-		free(hp_circle->points);
-		free(hp_circle);
-
 		for (i = 0; i < width; i++) {
 			for (j = 0; j < height; j++)
 				free(hough_circle[i][j]);
@@ -135,6 +132,9 @@ int main(int argc, char **argv)
 			free(hough_circle[i]);
 		}
 		free(hough_circle);
+
+		free(hp_circle->points);
+		free(hp_circle);
 	}
 
 	fwrite(img_out, width * height, 1, fp_out);

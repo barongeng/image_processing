@@ -86,7 +86,7 @@ static struct hough_param *find_best_line(struct point *points, int size, int wi
 	hp->nrho = nrho;
 	hp->resolution = HOUGH_RES_SHT;
 	hp->mag = hough[hp->rho][hp->theta];
-	hp->thresh = (hough[hp->rho][hp->theta] * 70) / 100;
+	hp->thresh = (hough[hp->rho][hp->theta] * 20) / 100;
 
 	printf("accumulator max: %d\n", hough[rho_best][theta_best]);
 	printf("hp->theta: %d\n", hp->theta);
@@ -120,7 +120,7 @@ struct hough_param *find_line(unsigned char *img, int width, int height)
 		}
 	}
 
-	hp = find_best_line(points, width * height, width, height);
+	hp = find_best_line(points, idx, width, height);
 
 	hp->points = points;
 	hp->points_size = idx;

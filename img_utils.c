@@ -116,12 +116,14 @@ void draw_line(unsigned char *img, int width, int height, struct point start, st
 	int y1 = start.y;
 	int x2 = end.x;
 	int y2 = end.y;
+
 	dx = x2 - x1;      /* the horizontal distance of the line */
 	dy = y2 - y1;      /* the vertical distance of the line */
 	dxabs = abs(dx);
 	dyabs = abs(dy);
 	sdx = sign(dx);
 	sdy = sign(dy);
+
 	if (dxabs >= dyabs) {
 		slope = (float)dy / (float)dx;
 		for (i = 0; i != dx; i += sdx) {
