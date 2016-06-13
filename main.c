@@ -120,7 +120,9 @@ int main(int argc, char **argv)
 
 		printf("circle, a: %d, b: %d, radix: %d\n", hp_circle->a, hp_circle->b, hp_circle->radius);
 
-		draw_overlay_circle(hp_circle, img_out, width, height);
+		draw_overlay_circle(hp_circle, img, width, height);
+
+		memcpy(img_out, img, width * height);
 
 		free(hp_circle->points);
 		free(hp_circle);
