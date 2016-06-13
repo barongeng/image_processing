@@ -16,38 +16,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef HOUGH_H
-#define HOUGH_H
+#ifndef IMG_UTILS_H
+#define IMG_UTILS_H
 
-#include "img_utils.h"
-
-extern int **hough;
-extern int ***hough_circle;
-
-struct hough_param {
-	int theta;
-	int rho;
-	int nrho;
-	int mag;
-	int resolution;
-	int thresh;
-	struct point *points;
-	int points_size;
+struct point {
+	int x;
+	int y;
 };
 
-struct hough_param_circle {
-	int a;
-	int b;
-	int radius;
-	int resolution;
-	int thresh;
-	struct point *points;
-	int points_size;
-};
 
-struct hough_param *find_line(unsigned char *img, int width, int height);
-struct hough_param_circle *find_circle(unsigned char *img, int width, int height);
-void draw_overlay(struct hough_param *hp, unsigned char *img, int width, int height);
-void draw_overlay_circle(struct hough_param_circle *hp, unsigned char *img, int width, int height);
+void clip_line(struct point *p1, struct point *p2, int xmin, int ymin, int xmax, int ymax);
+void draw_line(unsigned char *img, int width, int height, struct point start, struct point end);
 
-#endif /* HOUGH_H */
+#endif /* IMG_UTILS_H */
