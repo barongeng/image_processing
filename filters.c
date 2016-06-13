@@ -408,11 +408,11 @@ void canny_edge(unsigned char *src, unsigned char *out, int width, int height, f
 	unsigned char hyst_px[9];
 	unsigned char *edge = (unsigned char *)malloc(width * height * sizeof(unsigned char));
 
-	gaussian_filter(src, width, height, sigma);
+	memcpy(out, src, width * height);
 
-	edge_filter(src, out, width, height);
+	gaussian_filter(out, width, height, sigma);
 
-	memcpy(edge, out, width * height);
+	edge_filter(out, edge, width, height);
 
 	for (i = start_x; i < (height - start_x); i++) {
 		for (j = start_y; j < (width - start_y); j++) {
@@ -455,7 +455,7 @@ void canny_edge(unsigned char *src, unsigned char *out, int width, int height, f
 	}
 
 
-	memcpy(src, out, width * height);
+	memcpy(edge, out, width * height);
 
 
 //	for (i = start_x; i < (height - start_x); i++) {
@@ -475,7 +475,7 @@ void canny_edge(unsigned char *src, unsigned char *out, int width, int height, f
 		for (j = start_y; j < (width - start_y); j++) {
 			p = i * width + j;
 
-			if (src[p] >= tmax && out[p] == 0) {
+			if (edge[p] >= tmax && out[p] == 0) {
 				out[p] = MAX_BRIGHTNESS;
 				px[0] = p;
 				g = 1;
@@ -494,7 +494,7 @@ void canny_edge(unsigned char *src, unsigned char *out, int width, int height, f
 					hyst_px[7] = px[g] + width - 1;
 
 					for (k = 0; k < 8; k++) {
-						if (src[hyst_px[k]] >= tmin && out[hyst_px[k]] == 0) {
+						if (edge[hyst_px[k]] >= tmin && out[hyst_px[k]] == 0) {
 							out[hyst_px[k]] = MAX_BRIGHTNESS;
 							px[g] = hyst_px[k];
 							g++;
